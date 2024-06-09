@@ -181,10 +181,11 @@ class TestModel:
     def __init__(self, input_dim, model_path):
         self._input_dim = input_dim
         self._model = self._load_my_model(model_path)
+        self._is_cnn = self._check_if_cnn()
 
     def _load_my_model(self, model_folder_path):
         """
-        Load the model stored in the folder specified by the model number, if it exists
+        Load the model stored in the folder specified by the model number, if it exists.
         """
         model_file_path = os.path.join(model_folder_path, 'trained_model.h5')
 
@@ -194,12 +195,31 @@ class TestModel:
         else:
             sys.exit("Model number not found")
 
+    def _check_if_cnn(self):
+        """
+        Check if the model is a CNN by inspecting the input layer.
+        """
+        for layer in self._model.layers:
+            if isinstance(layer, Conv2D):
+                return True
+        return False
+
     def predict_one(self, state):
         """
-        Predict the action values from a single state
+        Predict the action values from a single state.
+        Adjust shape based on whether the model is NN or CNN.
         """
-        # Ensure state has the correct shape for CNN
-        state = np.reshape(state, (1, *self._input_dim))  # Adjust this if your input shape differs
+        if self._is_cnn:
+            # For CNN
+            input_height = 20  # Example height
+            input_width = 4  # Example width
+            input_channels = 1  # Example channels (grayscale)
+
+            state = np.reshape(state, [1, input_height, input_width, input_channels])
+        else:
+            # For NN
+            state = np.reshape(state, [1, self._input_dim])
+
         return self._model.predict(state)
 
     @property
